@@ -5,12 +5,12 @@ import redis from '../app/redisClient.js';
 
 const generateTokens = (user) => {
   const accessToken = jwt.sign(
-    { id: user.id },
+    { id: user.id, email: user.email },
     process.env.SECRET_KEY,
     { expiresIn: '20h' }
   );
   const refreshToken = jwt.sign(
-    { id: user.id },
+    { id: user.id, email: user.email },
     process.env.SECRET_KEY,
     { expiresIn: '7d' }
   );
@@ -52,7 +52,15 @@ const login = async (req, res) => {
       ex: 7 * 24 * 60 * 60,
     });
 
-    res.json({ accessToken, refreshToken });
+    res.status(200).json({
+      data: {
+        accessToken,
+        refreshToken,
+        user: {
+          email: user.email,
+        },
+      },
+    });
   } catch (e) {
     res.status(500).json({ message: `Server error ${e.message}` });
   }
@@ -85,7 +93,7 @@ const refreshTokenHandler = async (req, res) => {
   }
 };
 const logout = async (req, res) => {
-  const userId = req.user.id; // Assuming user is authenticated
+  const userId = req.user.id; 
 
   await redis.del(`refreshToken:${userId}`);
 
